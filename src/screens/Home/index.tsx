@@ -1,10 +1,11 @@
 import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, Text} from 'react-native';
+import {ActivityIndicator, Alert} from 'react-native';
 import uuid from 'react-native-uuid';
+import {useMaskedInputProps, Masks} from 'react-native-mask-input';
 
 import {Input, Button, Patient} from '../../components';
 import {getRealm} from '../../databases/schemas/realm';
-import {Container} from './styles';
+import {Container, List} from './styles';
 import IPatient from '../../interfaces/Patient';
 
 export default () => {
@@ -12,8 +13,14 @@ export default () => {
   const [patients, setPatients] = useState<IPatient[]>([]);
 
   const [name, setName] = useState('');
-  const [age, setAge] = useState('');
   const [type, setType] = useState('');
+  const [birthday, setBirthday] = useState('');
+
+  const maskedInputDateProps = useMaskedInputProps({
+    value: birthday,
+    onChangeText: setBirthday,
+    mask: Masks.DATE_DDMMYYYY,
+  });
 
   async function getPatients() {
     try {
@@ -38,19 +45,24 @@ export default () => {
   }, []);
 
   async function handleNewPatient() {
+    if (name === '' || type === '' || birthday === '') {
+      Alert.alert('Aviso', 'Alguns campos estão em branco');
+      return;
+    }
+
     const realm = await getRealm();
 
     try {
       setLoading(true);
 
       realm.write(() => {
-        const newPatient = realm.create('Patient', {
+        realm.create('Patient', {
           ///_id: new BSON.ObjectID(),
           _id: uuid.v4(),
           name,
-          age: Number(age),
           type,
           created_at: String(new Date()),
+          birthday: String(new Date(birthday)),
         });
       });
 
@@ -63,9 +75,32 @@ export default () => {
       realm.close();
     } finally {
       setLoading(false);
-      setAge('');
       setName('');
       setType('');
+      setBirthday('');
+    }
+  }
+
+  async function deletePatient(id: string) {
+    const realm = await getRealm();
+
+    try {
+      const patientDelete = realm.objects('Patient').filtered(`_id == "${id}"`);
+
+      if (patientDelete.length > 0) {
+        realm.write(() => {
+          realm.delete(patientDelete[0]);
+        });
+
+        Alert.alert('Atenção', 'paciente deletado');
+      }
+
+      realm.close();
+
+      getPatients();
+    } catch (error) {
+      console.log(error);
+      realm.close();
     }
   }
 
@@ -73,27 +108,24 @@ export default () => {
     <Container>
       {loading && <ActivityIndicator />}
       <Input placeholder="Nome" onChangeText={setName} value={name} />
-      <Input
-        placeholder="Idade"
-        onChangeText={setAge}
-        value={age}
-        keyboardType="numeric"
-      />
       <Input placeholder="Tipo paciente" onChangeText={setType} value={type} />
+      <Input {...maskedInputDateProps} placeholder="Data de nascimento" />
       <Button onPress={handleNewPatient}>Cadastrar</Button>
 
-      {patients.map((patient, index) => (
-        <Patient
-          key={String(index)}
-          onPressEdit={() => {}}
-          onPressExclude={() => {}}
-          name={patient.name}
-          age={patient.age}
-          created_at={patient.created_at}
-          type={patient.type}
-          _id={patient._id}
-        />
-      ))}
+      <List>
+        {patients.map((patient, index) => (
+          <Patient
+            key={String(index)}
+            onPressEdit={() => {}}
+            onPressExclude={() => deletePatient(patient._id)}
+            name={patient.name}
+            birthday={patient.birthday}
+            created_at={patient.created_at}
+            type={patient.type}
+            _id={patient._id}
+          />
+        ))}
+      </List>
     </Container>
   );
 };

@@ -5,3 +5,7 @@ export const Container = styled.View`
   align-items: center;
   padding: 10px;
 `;
+
+export const List = styled.ScrollView`
+  width: 100%;
+`;

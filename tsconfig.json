@@ -2,6 +2,9 @@
 {
   "types": ["react-native", "jest","styled-components-react-native"],
   "extends": "@tsconfig/react-native/tsconfig.json",     /* Recommended React Native TSConfig base */
+  "rules":{
+    "no-extra-semi": "off",
+  },
   "compilerOptions": {
     "jsx": "react",
     /* Visit https://aka.ms/tsconfig.json to read more about this file */
