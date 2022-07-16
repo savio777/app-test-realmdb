@@ -9,3 +9,9 @@ export const Container = styled.View`
 export const List = styled.ScrollView`
   width: 100%;
 `;
+
+export const ContentRow = styled.View`
+  flex-direction: row;
+  width: 100%;
+  justify-content: center;
+`;

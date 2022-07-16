@@ -1,12 +1,13 @@
 import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, Alert} from 'react-native';
+import {ActivityIndicator} from 'react-native';
 import uuid from 'react-native-uuid';
 import {useMaskedInputProps, Masks} from 'react-native-mask-input';
+import {showMessage} from 'react-native-flash-message';
 
-import {Input, Button, Patient} from '../../components';
 import {getRealm} from '../../databases/schemas/realm';
-import {Container, List} from './styles';
 import IPatient from '../../interfaces/Patient';
+import {Container, List, ContentRow} from './styles';
+import {Input, Button, Patient} from '../../components';
 
 export default () => {
   const [loading, setLoading] = useState(false);
@@ -46,7 +47,7 @@ export default () => {
 
   async function handleNewPatient() {
     if (name === '' || type === '' || birthday === '') {
-      Alert.alert('Aviso', 'Alguns campos estão em branco');
+      showMessage({message: 'Alguns campos estão em branco', type: 'warning'});
       return;
     }
 
@@ -64,6 +65,8 @@ export default () => {
           created_at: String(new Date()),
           birthday: String(new Date(birthday)),
         });
+
+        showMessage({message: 'Paciente cadastrado', type: 'success'});
       });
 
       realm.close();
@@ -71,7 +74,7 @@ export default () => {
       getPatients();
     } catch (error) {
       console.log('err', error);
-      Alert.alert('Erro', 'erro ao acessar a base de dados');
+      showMessage({message: 'Erro ao acessar a base de dados', type: 'danger'});
       realm.close();
     } finally {
       setLoading(false);
@@ -81,7 +84,26 @@ export default () => {
     }
   }
 
-  async function deletePatient(id: string) {
+  async function handleDeleteAllPatients() {
+    const realm = await getRealm();
+
+    try {
+      realm.write(() => {
+        realm.delete(realm.objects('Patient'));
+      });
+
+      showMessage({message: 'Pacientes deletados', type: 'warning'});
+
+      realm.close();
+
+      getPatients();
+    } catch (error) {
+      console.log(error);
+      realm.close();
+    }
+  }
+
+  async function deletePatient(id?: string) {
     const realm = await getRealm();
 
     try {
@@ -92,7 +114,7 @@ export default () => {
           realm.delete(patientDelete[0]);
         });
 
-        Alert.alert('Atenção', 'paciente deletado');
+        showMessage({message: 'Paciente deletado', type: 'warning'});
       }
 
       realm.close();
@@ -110,7 +132,10 @@ export default () => {
       <Input placeholder="Nome" onChangeText={setName} value={name} />
       <Input placeholder="Tipo paciente" onChangeText={setType} value={type} />
       <Input {...maskedInputDateProps} placeholder="Data de nascimento" />
-      <Button onPress={handleNewPatient}>Cadastrar</Button>
+      <ContentRow>
+        <Button onPress={handleNewPatient}>Cadastrar</Button>
+        <Button onPress={handleDeleteAllPatients}>Apagar tudo</Button>
+      </ContentRow>
 
       <List>
         {patients.map((patient, index) => (
