@@ -11,6 +11,10 @@ import {Input, Button, Patient} from '../../components';
 
 export default () => {
   const [loading, setLoading] = useState(false);
+  const [newOrUpdatePatient, setNewOrUpdatePatient] = useState<
+    'new' | 'update'
+  >('new');
+  const [patient, setPatient] = useState<Partial<IPatient>>();
   const [patients, setPatients] = useState<IPatient[]>([]);
 
   const [name, setName] = useState('');
@@ -45,11 +49,22 @@ export default () => {
     getPatients();
   }, []);
 
-  async function handleNewPatient() {
+  function verifyInputs() {
     if (name === '' || type === '' || birthday === '') {
       showMessage({message: 'Alguns campos estão em branco', type: 'warning'});
       return;
     }
+  }
+
+  function cleanInputs() {
+    setLoading(false);
+    setName('');
+    setType('');
+    setBirthday('');
+  }
+
+  async function handleNewPatient() {
+    verifyInputs();
 
     const realm = await getRealm();
 
@@ -77,10 +92,49 @@ export default () => {
       showMessage({message: 'Erro ao acessar a base de dados', type: 'danger'});
       realm.close();
     } finally {
-      setLoading(false);
-      setName('');
-      setType('');
-      setBirthday('');
+      cleanInputs();
+    }
+  }
+
+  function setInputsUpdatePatient(patientUpdate: IPatient) {
+    setNewOrUpdatePatient('update');
+    setPatient(patientUpdate);
+    setName(patientUpdate?.name);
+    setType(patientUpdate?.type);
+    setBirthday(
+      String(new Date(patientUpdate?.birthday).toLocaleDateString('pt-BR')),
+    );
+  }
+
+  async function handleUpdatePatient() {
+    verifyInputs();
+
+    const realm = await getRealm();
+
+    try {
+      const getPatient = realm
+        .objects<IPatient>('Patient')
+        .filtered(`_id == "${patient?._id}"`);
+
+      if (getPatient.length > 0) {
+        const patientUpdate = getPatient[0];
+        realm.write(() => {
+          patientUpdate.name = name;
+          patientUpdate.type = type;
+          patientUpdate.birthday = birthday;
+        });
+      }
+
+      showMessage({message: 'Paciente atualizado', type: 'success'});
+
+      realm.close();
+
+      getPatients();
+    } catch (error) {
+      console.log('err', error);
+      showMessage({message: 'Erro ao atualizar os dados', type: 'danger'});
+    } finally {
+      cleanInputs();
     }
   }
 
@@ -131,9 +185,24 @@ export default () => {
       {loading && <ActivityIndicator />}
       <Input placeholder="Nome" onChangeText={setName} value={name} />
       <Input placeholder="Tipo paciente" onChangeText={setType} value={type} />
-      <Input {...maskedInputDateProps} placeholder="Data de nascimento" />
+      <Input
+        {...maskedInputDateProps}
+        placeholder="Data de nascimento"
+        onSubmitEditing={() =>
+          newOrUpdatePatient === 'new'
+            ? handleNewPatient()
+            : handleUpdatePatient()
+        }
+      />
       <ContentRow>
-        <Button onPress={handleNewPatient}>Cadastrar</Button>
+        <Button
+          onPress={() =>
+            newOrUpdatePatient === 'new'
+              ? handleNewPatient()
+              : handleUpdatePatient()
+          }>
+          {newOrUpdatePatient === 'new' ? 'Cadastrar' : 'Atualizar'}
+        </Button>
         <Button onPress={handleDeleteAllPatients}>Apagar tudo</Button>
       </ContentRow>
 
@@ -141,7 +210,7 @@ export default () => {
         {patients.map((patient, index) => (
           <Patient
             key={String(index)}
-            onPressEdit={() => {}}
+            onPressEdit={() => setInputsUpdatePatient(patient)}
             onPressExclude={() => deletePatient(patient._id)}
             name={patient.name}
             birthday={patient.birthday}
