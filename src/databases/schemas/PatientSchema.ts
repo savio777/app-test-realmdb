@@ -3,8 +3,9 @@ export const PatientSchema = {
   properties: {
     _id: 'string',
     name: 'string',
-    type: 'string',
+    type: 'TypesPatient?',
     created_at: 'string',
     birthday: 'string',
   },
+  primaryKey: '_id',
 };

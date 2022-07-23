@@ -1,6 +1,7 @@
 import Realm from 'realm';
-import {PatientSchema} from './PatientSchema';
-import {TypesPatientSchema} from './TypesPatientSchema';
+
+import {PatientSchema} from './schemas/PatientSchema';
+import {TypesPatientSchema} from './schemas/TypesPatientSchema';
 
 export const getRealm = async () =>
   await Realm.open({

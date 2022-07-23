@@ -1,7 +1,8 @@
 export const TypesPatientSchema = {
-  name: 'TpesPatient',
+  name: 'TypesPatient',
   properties: {
-    _id: 'objectId',
+    _id: 'string',
     name: 'string',
   },
+  primaryKey: '_id',
 };

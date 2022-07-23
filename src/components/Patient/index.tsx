@@ -30,7 +30,7 @@ const Patient: React.FC<Props> = ({
   <Container>
     <ContentLeft>
       <Title>{name}</Title>
-      <Text>tipo: {type}</Text>
+      <Text>tipo: {type?.name}</Text>
       <Text>nascimento: {toLocaleDateString(birthday)}</Text>
       <Text>criado: {toLocaleDateString(created_at)}</Text>
     </ContentLeft>
